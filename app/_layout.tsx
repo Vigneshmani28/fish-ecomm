@@ -41,7 +41,13 @@ function RootLayoutNav() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
+      <Stack
+  screenOptions={{
+    headerShown: false,
+    gestureEnabled: true,
+    fullScreenGestureEnabled: true,
+  }}
+>
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="cart" options={{ headerShown: false }} />

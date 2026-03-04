@@ -18,6 +18,7 @@ import {
     View,
     Animated,
     StatusBar,
+    useWindowDimensions,
 } from 'react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -33,9 +34,11 @@ export default function ProductDetailScreen() {
     const [quantity, setQuantity] = useState(1);
     const [cleaningSelected, setCleaningSelected] = useState(false);
     const [imageLoading, setImageLoading] = useState(true);
+    const [descriptionExpanded, setDescriptionExpanded] = useState(false);
 
     const scrollY = useRef(new Animated.Value(0)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
+    const { width: screenWidth } = useWindowDimensions();
 
     const tintColor = useThemeColor({}, 'tint');
     const iconColor = useThemeColor({}, 'icon');
@@ -213,13 +216,23 @@ export default function ProductDetailScreen() {
                     )}
                 </View>
 
-                {/* Product Info - No Card */}
-                <View style={styles.infoContainer}>
-                    <View style={styles.nameRow}>
-                        <ThemedText style={styles.productName}>
+                {/* Product Info - Simple Top Section */}
+                <View style={styles.topSection}>
+                    {/* Left: Name and Category */}
+                    <View style={styles.nameSection}>
+                        <ThemedText style={styles.productName} numberOfLines={2}>
                             {product.name}
                         </ThemedText>
-                        <View style={styles.priceRow}>
+                        <View style={[styles.categoryBadge, { backgroundColor: `${tintColor}15` }]}>
+                            <ThemedText style={[styles.categoryText, { color: tintColor }]}>
+                                {product.category}
+                            </ThemedText>
+                        </View>
+                    </View>
+
+                    {/* Right: Price and Quantity */}
+                    <View style={styles.rightSection}>
+                        <View style={styles.priceSection}>
                             <ThemedText style={[styles.price, { color: tintColor }]}>
                                 ₹{product.price}
                             </ThemedText>
@@ -227,150 +240,103 @@ export default function ProductDetailScreen() {
                                 /kg
                             </ThemedText>
                         </View>
-                    </View>
 
-                    <View style={styles.categoryRow}>
-                        <View style={[styles.categoryBadge, { backgroundColor: `${tintColor}10` }]}>
-                            <ThemedText style={[styles.categoryText, { color: tintColor }]}>
-                                {product.category}
-                            </ThemedText>
-                        </View>
-                    </View>
-
-                    {product.description && (
-                        <ThemedText style={[styles.description, { color: iconColor }]}>
-                            {product.description}
-                        </ThemedText>
-                    )}
-
-                    {!product.is_available && (
-                        <View style={styles.outOfStockContainer}>
-                            <Ionicons name="alert-circle" size={18} color="#DC2626" />
-                            <ThemedText style={styles.outOfStockText}>
-                                Currently out of stock
-                            </ThemedText>
-                        </View>
-                    )}
-                </View>
-
-                {product.is_available && (
-                    <>
-                        {/* Separator */}
-                        <View style={[styles.separator, { backgroundColor: borderColor }]} />
-
-                        {/* Quantity Selector - Inline */}
-                        <View style={styles.quantityContainer}>
-                            <View style={styles.quantityHeader}>
-                                <Ionicons name="scale" size={20} color={iconColor} />
-                                <ThemedText style={styles.quantityLabel}>
-                                    Select Quantity
-                                </ThemedText>
-                            </View>
-
-                            <View style={styles.quantityControls}>
+                        {product.is_available && (
+                            <View style={styles.quickQuantity}>
                                 <TouchableOpacity
-                                    style={[styles.quantityButton, { borderColor }]}
                                     onPress={() => setQuantity(Math.max(1, quantity - 1))}
                                     disabled={quantity <= 1}
-                                >
-                                    <Ionicons
-                                        name="remove"
-                                        size={20}
-                                        color={quantity <= 1 ? iconColor : textColor}
-                                    />
+                                    style={[styles.quickQtyBtn, { opacity: quantity <= 1 ? 0.5 : 1 }]}>
+                                    <Ionicons name="remove" size={16} color={textColor} />
                                 </TouchableOpacity>
-
-                                <View style={styles.quantityDisplay}>
-                                    <ThemedText style={styles.quantityNumber}>
-                                        {quantity}
-                                    </ThemedText>
-                                    <ThemedText style={[styles.quantityUnit, { color: iconColor }]}>
-                                        kg
-                                    </ThemedText>
-                                </View>
-
+                                <ThemedText style={styles.qtyValue}>{quantity}kg</ThemedText>
                                 <TouchableOpacity
-                                    style={[styles.quantityButton, { borderColor }]}
                                     onPress={() => setQuantity(quantity + 1)}
-                                >
-                                    <Ionicons name="add" size={20} color={textColor} />
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-
-                        {/* Separator */}
-                        <View style={[styles.separator, { backgroundColor: borderColor }]} />
-
-                        {/* Cleaning Option - Button Style */}
-                        {product.cleaning_available && product.cleaning_price_per_kg && (
-                            <View style={styles.cleaningContainer}>
-                                <View style={styles.cleaningHeader}>
-                                    <View style={styles.cleaningTitleContainer}>
-                                        <Ionicons name="water" size={20} color={iconColor} />
-                                        <ThemedText style={styles.cleaningTitle}>
-                                            Cleaning Service Available
-                                        </ThemedText>
-                                    </View>
-                                    <ThemedText style={[styles.cleaningPrice, { color: tintColor }]}>
-                                        ₹{product.cleaning_price_per_kg}/kg
-                                    </ThemedText>
-                                </View>
-
-                                <TouchableOpacity
-                                    style={[
-                                        styles.cleaningOption,
-                                        cleaningSelected && styles.cleaningOptionSelected,
-                                        { borderColor: cleaningSelected ? tintColor : borderColor }
-                                    ]}
-                                    onPress={() => {
-                                        setCleaningSelected(!cleaningSelected);
-                                        // Update cart if product already exists
-                                        if (existingInCart) {
-                                            toggleCleaning(id!);
-                                        }
-                                    }}
-                                    activeOpacity={0.7}
-                                >
-                                    <View style={styles.cleaningOptionContent}>
-                                        <View style={styles.cleaningOptionLeft}>
-                                            <View style={[
-                                                styles.cleaningCheckbox,
-                                                cleaningSelected && { backgroundColor: tintColor, borderColor: tintColor }
-                                            ]}>
-                                                {cleaningSelected && (
-                                                    <Ionicons name="checkmark" size={14} color="#FFFFFF" />
-                                                )}
-                                            </View>
-                                            <View>
-                                                <ThemedText style={styles.cleaningOptionTitle}>
-                                                    Get it cleaned
-                                                </ThemedText>
-                                                <ThemedText style={[styles.cleaningOptionDesc, { color: iconColor }]}>
-                                                    Professional cleaning & preparation
-                                                </ThemedText>
-                                            </View>
-                                        </View>
-                                        {cleaningSelected && (
-                                            <View style={styles.cleaningCharge}>
-                                                <Ionicons name="add-circle" size={16} color={tintColor} />
-                                                <ThemedText style={[styles.cleaningChargeText, { color: tintColor }]}>
-                                                    ₹{cleaningCharge}
-                                                </ThemedText>
-                                            </View>
-                                        )}
-                                    </View>
+                                    style={styles.quickQtyBtn}>
+                                    <Ionicons name="add" size={16} color={textColor} />
                                 </TouchableOpacity>
                             </View>
                         )}
+                    </View>
+                </View>
 
-                        {/* Separator */}
-                        <View style={[styles.separator, { backgroundColor: borderColor }]} />
+                {/* Availability and Cleaning Option */}
+                {!product.is_available && (
+                    <View style={styles.outOfStockBanner}>
+                        <Ionicons name="alert-circle" size={16} color="#EF4444" />
+                        <ThemedText style={styles.outOfStockText}>
+                            Currently unavailable
+                        </ThemedText>
+                    </View>
+                )}
 
-                        {/* Price Breakdown - Simple */}
-                        <View style={styles.priceBreakdown}>
+                {product.is_available && product.cleaning_available && product.cleaning_price_per_kg && (
+                    <View style={styles.cleaningQuickOption}>
+                        <TouchableOpacity
+                            style={[styles.cleaningToggle, cleaningSelected && { borderColor: tintColor }]}
+                            onPress={() => {
+                                setCleaningSelected(!cleaningSelected);
+                                if (existingInCart) {
+                                    toggleCleaning(id!);
+                                }
+                            }}>
+                            <View style={[styles.checkBox, cleaningSelected && { backgroundColor: tintColor, borderColor: tintColor }]}>
+                                {cleaningSelected && <Ionicons name="checkmark" size={12} color="#FFF" />}
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <ThemedText style={styles.cleaningLabel}>
+                                    Add Cleaning Service
+                                </ThemedText>
+                                <ThemedText style={[styles.cleaningSubtext, { color: iconColor }]}>
+                                    +₹{product.cleaning_price_per_kg}/kg
+                                </ThemedText>
+                            </View>
+                        </TouchableOpacity>
+                    </View>
+                )}
+
+                {/* Description Section */}
+                {product.description && (
+                    <View style={styles.descriptionSection}>
+                        <ThemedText style={styles.sectionTitle}>About this product</ThemedText>
+                        <View style={styles.descriptionBox}>
+                            <ThemedText 
+                                style={[styles.descriptionText, { color: iconColor }]}
+                                numberOfLines={descriptionExpanded ? undefined : 3}
+                            >
+                                {product.description}
+                            </ThemedText>
+                        </View>
+                        {product.description.length > 100 && (
+                            <TouchableOpacity
+                                onPress={() => setDescriptionExpanded(!descriptionExpanded)}
+                                style={styles.expandButton}
+                            >
+                                <ThemedText style={[styles.expandButtonText, { color: tintColor }]}>
+                                    {descriptionExpanded ? 'Show less' : 'Show more'}
+                                </ThemedText>
+                                <Ionicons 
+                                    name={descriptionExpanded ? 'chevron-up' : 'chevron-down'} 
+                                    size={16} 
+                                    color={tintColor} 
+                                />
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                )}
+
+                {product.is_available && (
+                    <>
+
+                        {/* Price Breakdown Card */}
+                        <View style={styles.priceCard}>
+                            <ThemedText style={styles.sectionTitle}>
+                                Price Details
+                            </ThemedText>
+                            
                             <View style={styles.breakdownRow}>
                                 <ThemedText style={[styles.breakdownLabel, { color: iconColor }]}>
-                                    Price ({quantity} kg)
+                                    Product ({quantity} kg)
                                 </ThemedText>
                                 <ThemedText style={styles.breakdownValue}>
                                     ₹{itemTotal}
@@ -380,7 +346,7 @@ export default function ProductDetailScreen() {
                             {cleaningSelected && cleaningCharge > 0 && (
                                 <View style={styles.breakdownRow}>
                                     <ThemedText style={[styles.breakdownLabel, { color: iconColor }]}>
-                                        Cleaning charge
+                                        Cleaning service
                                     </ThemedText>
                                     <ThemedText style={styles.breakdownValue}>
                                         +₹{cleaningCharge}
@@ -388,7 +354,7 @@ export default function ProductDetailScreen() {
                                 </View>
                             )}
 
-                            <View style={[styles.breakdownTotal, { borderTopColor: borderColor }]}>
+                            <View style={[styles.breakdownTotal, { borderTopColor: `${borderColor}40`, backgroundColor: `${tintColor}08` }]}>
                                 <ThemedText style={styles.totalLabel}>
                                     Total Amount
                                 </ThemedText>
@@ -398,22 +364,32 @@ export default function ProductDetailScreen() {
                             </View>
                         </View>
 
-                        {/* Add to Cart Button - Fixed at bottom */}
-                        <View style={styles.buttonWrapper}>
-                            <TouchableOpacity
-                                style={[styles.addToCartButton, { backgroundColor: tintColor }]}
-                                activeOpacity={0.9}
-                                onPress={handleAddToCart}
-                            >
-                                <Ionicons name="cart" size={20} color="#FFFFFF" />
-                                <ThemedText style={styles.addToCartText}>
-                                    {existingInCart ? 'Add More' : 'Add to Cart'} • ₹{totalPrice}
-                                </ThemedText>
-                            </TouchableOpacity>
-                        </View>
+                        {/* Bottom Spacing */}
+                        <View style={{ height: 20 }} />
                     </>
                 )}
             </Animated.ScrollView>
+
+            {/* Sticky Add to Cart Button */}
+            {product?.is_available && (
+                <View style={[styles.stickyButtonContainer, { backgroundColor: bgColor }]}>
+                    <TouchableOpacity
+                        style={[styles.addToCartButton, { backgroundColor: tintColor }]}
+                        activeOpacity={0.85}
+                        onPress={handleAddToCart}
+                    >
+                        <Ionicons name="cart" size={22} color="#FFFFFF" />
+                        <ThemedText
+                            type="defaultSemiBold"
+                            lightColor="#fff"
+                            darkColor="#000"
+                            style={styles.addToCartText}
+                        >
+                            {existingInCart ? 'Update Cart' : 'Add to Cart'} • ₹{totalPrice}
+                        </ThemedText>
+                    </TouchableOpacity>
+                </View>
+            )}
         </ThemedView>
     );
 }
@@ -437,14 +413,19 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: 16,
         paddingTop: Platform.OS === 'ios' ? 56 : 48,
-        paddingBottom: 12,
+        paddingBottom: 14,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(0,0,0,0.05)',
+        borderBottomColor: 'rgba(0,0,0,0.08)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
     },
     headerButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -460,11 +441,11 @@ const styles = StyleSheet.create({
     },
     cartBadge: {
         position: 'absolute',
-        top: -6,
-        right: -6,
-        minWidth: 18,
-        height: 18,
-        borderRadius: 9,
+        top: -8,
+        right: -8,
+        minWidth: 20,
+        height: 20,
+        borderRadius: 10,
         alignItems: 'center',
         justifyContent: 'center',
         paddingHorizontal: 4,
@@ -472,19 +453,20 @@ const styles = StyleSheet.create({
     cartBadgeText: {
         color: '#FFFFFF',
         fontSize: 10,
-        fontWeight: '600',
+        fontWeight: '700',
     },
     scrollView: {
         flex: 1,
     },
     scrollContent: {
         paddingTop: Platform.OS === 'ios' ? 100 : 92,
-        paddingBottom: 24,
+        paddingBottom: 32,
     },
     imageContainer: {
         width: SCREEN_WIDTH,
         height: HEADER_MAX_HEIGHT,
-        backgroundColor: '#F9FAFB',
+        backgroundColor: '#F3F4F6',
+        overflow: 'hidden',
     },
     productImage: {
         width: '100%',
@@ -494,183 +476,200 @@ const styles = StyleSheet.create({
         ...StyleSheet.absoluteFillObject,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#F9FAFB',
+        backgroundColor: '#F3F4F6',
     },
     placeholderImage: {
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#F3F4F6',
     },
-    infoContainer: {
-        padding: 20,
-        gap: 12,
-    },
-    nameRow: {
+    
+    /* Info Card Section */
+    topSection: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
+        marginHorizontal: 16,
+        marginTop: 16,
+        marginBottom: 12,
+        gap: 16,
+        alignItems: 'flex-start',
+    },
+    nameSection: {
+        flex: 1,
+        gap: 8,
     },
     productName: {
-        fontSize: 22,
-        fontWeight: '600',
-        flex: 1,
-        marginRight: 16,
+        fontSize: 20,
+        fontWeight: '700',
+        lineHeight: 28,
+    },
+    rightSection: {
+        alignItems: 'flex-end',
+        gap: 12,
+    },
+    priceSection: {
+        alignItems: 'flex-end',
     },
     priceRow: {
         flexDirection: 'row',
         alignItems: 'baseline',
+        gap: 6,
     },
     price: {
-        fontSize: 24,
-        fontWeight: '700',
+        fontSize: 26,
+        fontWeight: '800',
     },
     priceUnit: {
-        fontSize: 14,
-        marginLeft: 2,
-    },
-    categoryRow: {
-        flexDirection: 'row',
-    },
-    categoryBadge: {
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 6,
-    },
-    categoryText: {
-        fontSize: 12,
+        fontSize: 13,
         fontWeight: '500',
     },
-    description: {
-        fontSize: 14,
-        lineHeight: 20,
+    quickQuantity: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        backgroundColor: 'rgba(0,0,0,0.03)',
+        borderRadius: 8,
+        paddingHorizontal: 8,
+        paddingVertical: 6,
     },
-    outOfStockContainer: {
+    quickQtyBtn: {
+        width: 28,
+        height: 28,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    qtyValue: {
+        fontSize: 13,
+        fontWeight: '700',
+        minWidth: 35,
+        textAlign: 'center',
+    },
+    categoryBadge: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
-        backgroundColor: '#FEF2F2',
-        padding: 12,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 8,
+        alignSelf: 'flex-start',
+    },
+    categoryText: {
+        fontSize: 12,
+        fontWeight: '600',
+        textTransform: 'capitalize',
+    },
+    outOfStockBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        backgroundColor: '#FEE2E2',
+        marginHorizontal: 16,
+        marginBottom: 12,
+        padding: 10,
         borderRadius: 8,
     },
     outOfStockText: {
-        color: '#DC2626',
-        fontSize: 14,
-        fontWeight: '500',
-    },
-    separator: {
-        height: 1,
-        marginHorizontal: 20,
-        marginVertical: 4,
-    },
-    quantityContainer: {
-        padding: 20,
-    },
-    quantityHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        marginBottom: 16,
-    },
-    quantityLabel: {
-        fontSize: 15,
-        fontWeight: '500',
-    },
-    quantityControls: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 20,
-    },
-    quantityButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 12,
-        borderWidth: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    quantityDisplay: {
-        alignItems: 'center',
-        minWidth: 80,
-    },
-    quantityNumber: {
-        fontSize: 26,
-        fontWeight: '600',
-        marginBottom: 2,
-    },
-    quantityUnit: {
-        fontSize: 12,
-    },
-    cleaningContainer: {
-        padding: 20,
-    },
-    cleaningHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 16,
-    },
-    cleaningTitleContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-    },
-    cleaningTitle: {
-        fontSize: 15,
-        fontWeight: '500',
-    },
-    cleaningPrice: {
-        fontSize: 15,
+        color: '#EF4444',
+        fontSize: 13,
         fontWeight: '600',
     },
-    cleaningOption: {
-        borderWidth: 1,
-        borderRadius: 12,
-        padding: 16,
+    cleaningQuickOption: {
+        marginHorizontal: 16,
+        marginBottom: 12,
     },
-    cleaningOptionSelected: {
-        backgroundColor: 'rgba(0,0,0,0.02)',
-    },
-    cleaningOptionContent: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    cleaningOptionLeft: {
+    cleaningToggle: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
-        flex: 1,
+        paddingHorizontal: 12,
+        paddingVertical: 12,
+        borderWidth: 1.5,
+        borderColor: 'rgba(0,0,0,0.12)',
+        borderRadius: 8,
     },
-    cleaningCheckbox: {
-        width: 22,
-        height: 22,
-        borderRadius: 6,
-        borderWidth: 2,
+    checkBox: {
+        width: 20,
+        height: 20,
+        borderRadius: 4,
+        borderWidth: 1.5,
         borderColor: '#D1D5DB',
         alignItems: 'center',
         justifyContent: 'center',
     },
-    cleaningOptionTitle: {
-        fontSize: 15,
-        fontWeight: '500',
+    cleaningLabel: {
+        fontSize: 13,
+        fontWeight: '700',
         marginBottom: 2,
     },
-    cleaningOptionDesc: {
-        fontSize: 12,
+    cleaningSubtext: {
+        fontSize: 11,
+        fontWeight: '500',
     },
-    cleaningCharge: {
+    optionsIndicator: {
+        flexDirection: 'row',
+        gap: 10,
+        marginTop: 12,
+        flexWrap: 'wrap',
+    },
+    optionBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4,
+        gap: 6,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 8,
+        backgroundColor: 'rgba(0,0,0,0.03)',
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.08)',
     },
-    cleaningChargeText: {
-        fontSize: 14,
+    optionBadgeText: {
+        fontSize: 12,
         fontWeight: '600',
     },
-    priceBreakdown: {
-        padding: 20,
+    
+    /* Description Section */
+    descriptionSection: {
+        marginHorizontal: 16,
+        marginTop: 20,
         gap: 12,
+    },
+    sectionTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        letterSpacing: 0.3,
+    },
+    descriptionBox: {
+        padding: 14,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.08)',
+        backgroundColor: 'rgba(0,0,0,0.02)',
+    },
+    descriptionText: {
+        fontSize: 14,
+        lineHeight: 22,
+    },
+    expandButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        paddingVertical: 10,
+    },
+    expandButtonText: {
+        fontSize: 13,
+        fontWeight: '600',
+    },
+    
+    
+    /* Price Card */
+    priceCard: {
+        marginHorizontal: 16,
+        marginTop: 18,
+        padding: 18,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.08)',
+        gap: 14,
     },
     breakdownRow: {
         flexDirection: 'row',
@@ -679,73 +678,93 @@ const styles = StyleSheet.create({
     },
     breakdownLabel: {
         fontSize: 14,
+        fontWeight: '500',
     },
     breakdownValue: {
         fontSize: 14,
-        fontWeight: '500',
+        fontWeight: '700',
     },
     breakdownTotal: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingTop: 16,
+        paddingTop: 14,
         marginTop: 4,
-        borderTopWidth: 1,
+        paddingHorizontal: 12,
+        paddingVertical: 12,
+        borderTopWidth: 1.5,
+        borderRadius: 10,
     },
     totalLabel: {
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    totalValue: {
-        fontSize: 20,
+        fontSize: 15,
         fontWeight: '700',
     },
-    buttonWrapper: {
-        paddingHorizontal: 20,
-        paddingTop: 8,
-        paddingBottom: 20,
+    totalValue: {
+        fontSize: 22,
+        fontWeight: '800',
+    },
+    
+    /* Add to Cart Button */
+    stickyButtonContainer: {
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        paddingBottom: Platform.OS === 'ios' ? 32 : 20,
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(0,0,0,0.08)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -3 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 5,
     },
     addToCartButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 8,
-        height: 54,
+        gap: 10,
+        height: 56,
         borderRadius: 14,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 3,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.18,
+        shadowRadius: 10,
+        elevation: 5,
     },
     addToCartText: {
         fontSize: 16,
-        fontWeight: '600',
+        fontWeight: '700',
         color: '#FFFFFF',
     },
+    
+    /* Not Found */
     notFoundContainer: {
         alignItems: 'center',
         paddingHorizontal: 24,
-        gap: 16,
+        gap: 18,
     },
     notFoundTitle: {
-        fontSize: 18,
-        fontWeight: '600',
+        fontSize: 20,
+        fontWeight: '700',
         textAlign: 'center',
     },
     notFoundSubtitle: {
         fontSize: 14,
         textAlign: 'center',
-        marginBottom: 8,
+        lineHeight: 20,
     },
     notFoundButton: {
-        paddingHorizontal: 24,
-        paddingVertical: 12,
-        borderRadius: 10,
+        paddingHorizontal: 28,
+        paddingVertical: 14,
+        borderRadius: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 2,
     },
     notFoundButtonText: {
         color: '#FFFFFF',
-        fontSize: 14,
-        fontWeight: '600',
+        fontSize: 15,
+        fontWeight: '700',
     },
 });
