@@ -26,7 +26,7 @@ const HEADER_MAX_HEIGHT = SCREEN_WIDTH * 0.6;
 export default function ProductDetailScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const router = useRouter();
-    const { addToCart, items } = useCart();
+    const { addToCart, items, updateQuantity, toggleCleaning } = useCart();
 
     const [product, setProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState(true);
@@ -51,6 +51,17 @@ export default function ProductDetailScreen() {
             useNativeDriver: true,
         }).start();
     }, [id]);
+
+    // Load existing cart item data when product loads
+    useEffect(() => {
+        if (product) {
+            const existingInCart = items.find((item) => item.product.id === id);
+            if (existingInCart) {
+                setQuantity(existingInCart.quantity);
+                setCleaningSelected(existingInCart.cleaningSelected);
+            }
+        }
+    }, [product, id, items]);
 
     const fetchProduct = async () => {
         if (!id) return;
@@ -81,7 +92,15 @@ export default function ProductDetailScreen() {
 
     const handleAddToCart = () => {
         if (!product) return;
-        addToCart(product, quantity);
+        const existingInCart = items.find((item) => item.product.id === id);
+        if (existingInCart) {
+            // Update quantity if already in cart
+            updateQuantity(id!, quantity);
+        } else {
+            // Add new product to cart with cleaning option
+            console.log('Adding to cart:', { product, quantity, cleaningSelected });
+            addToCart(product, quantity, cleaningSelected);
+        }
         router.back();
     };
 
@@ -303,7 +322,13 @@ export default function ProductDetailScreen() {
                                         cleaningSelected && styles.cleaningOptionSelected,
                                         { borderColor: cleaningSelected ? tintColor : borderColor }
                                     ]}
-                                    onPress={() => setCleaningSelected(!cleaningSelected)}
+                                    onPress={() => {
+                                        setCleaningSelected(!cleaningSelected);
+                                        // Update cart if product already exists
+                                        if (existingInCart) {
+                                            toggleCleaning(id!);
+                                        }
+                                    }}
                                     activeOpacity={0.7}
                                 >
                                     <View style={styles.cleaningOptionContent}>

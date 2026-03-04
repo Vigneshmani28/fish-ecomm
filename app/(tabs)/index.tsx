@@ -32,6 +32,9 @@ function ProductCard({
   iconColor,
   onAdd,
   onPress,
+  quantity,
+  onQuantityChange,
+  onRemove,
 }: {
   item: Product;
   tintColor: string;
@@ -39,6 +42,9 @@ function ProductCard({
   iconColor: string;
   onAdd: () => void;
   onPress: () => void;
+  quantity: number;
+  onQuantityChange: (qty: number) => void;
+  onRemove: () => void;
 }) {
   return (
     <TouchableOpacity
@@ -80,23 +86,53 @@ function ProductCard({
           </ThemedText>
           <ThemedText style={[styles.unit, { color: iconColor }]}>per kg</ThemedText>
         </View>
-        <TouchableOpacity
-          style={[
-            styles.addButton,
-            { backgroundColor: item.is_available ? tintColor : '#ccc' },
-          ]}
-          activeOpacity={0.8}
-          onPress={(e) => {
-            e.stopPropagation?.();
-            onAdd();
-          }}
-          disabled={!item.is_available}
-        >
-          <Ionicons name="add" size={18} color="#fff" />
-          <ThemedText style={styles.addButtonText} lightColor="#fff" darkColor="#000">
-            Add
-          </ThemedText>
-        </TouchableOpacity>
+        {quantity > 0 ? (
+          <View style={[styles.quantityControl, { borderColor: tintColor }]}>
+            <TouchableOpacity
+              style={styles.qtyButton}
+              onPress={(e) => {
+                e.stopPropagation?.();
+                if (quantity > 1) {
+                  onQuantityChange(quantity - 1);
+                } else {
+                  onRemove();
+                }
+              }}
+            >
+              <Ionicons name="remove" size={16} color={tintColor} />
+            </TouchableOpacity>
+            <ThemedText style={[styles.qtyDisplay, { color: tintColor }]}>
+              {quantity}
+            </ThemedText>
+            <TouchableOpacity
+              style={styles.qtyButton}
+              onPress={(e) => {
+                e.stopPropagation?.();
+                onQuantityChange(quantity + 1);
+              }}
+            >
+              <Ionicons name="add" size={16} color={tintColor} />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={[
+              styles.addButton,
+              { backgroundColor: item.is_available ? tintColor : '#ccc' },
+            ]}
+            activeOpacity={0.8}
+            onPress={(e) => {
+              e.stopPropagation?.();
+              onAdd();
+            }}
+            disabled={!item.is_available}
+          >
+            <Ionicons name="add" size={18} color="#fff" />
+            <ThemedText style={styles.addButtonText} lightColor="#fff" darkColor="#000">
+              Add
+            </ThemedText>
+          </TouchableOpacity>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -104,7 +140,7 @@ function ProductCard({
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { addToCart, getItemCount } = useCart();
+  const { addToCart, getItemCount, items, updateQuantity, removeFromCart } = useCart();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -124,7 +160,6 @@ export default function HomeScreen() {
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .eq('is_available', true)
         .order('created_at', { ascending: false });
 
       if (!error && data) {
@@ -156,18 +191,26 @@ export default function HomeScreen() {
 
   const cartCount = getItemCount();
 
-  const renderProduct = ({ item, index }: { item: Product; index: number }) => (
-    <View style={[styles.productCardWrapper, index % 2 === 0 ? { marginRight: CARD_GAP } : {}]}>
-      <ProductCard
-        item={item}
-        tintColor={tintColor}
-        cardBg={cardBg}
-        iconColor={iconColor}
-        onAdd={() => addToCart(item)}
-        onPress={() => router.push(`/product/${item.id}`)}
-      />
-    </View>
-  );
+  const renderProduct = ({ item, index }: { item: Product; index: number }) => {
+    const cartItem = items.find(ci => ci.product.id === item.id);
+    const quantity = cartItem?.quantity || 0;
+
+    return (
+      <View style={[styles.productCardWrapper, index % 2 === 0 ? { marginRight: CARD_GAP } : {}]}>
+        <ProductCard
+          item={item}
+          tintColor={tintColor}
+          cardBg={cardBg}
+          iconColor={iconColor}
+          quantity={quantity}
+          onAdd={() => addToCart(item)}
+          onQuantityChange={(qty) => updateQuantity(item.id, qty)}
+          onRemove={() => removeFromCart(item.id)}
+          onPress={() => router.push(`/product/${item.id}`)}
+        />
+      </View>
+    );
+  };
 
   const ListHeader = () => (
     <>
@@ -463,6 +506,29 @@ const styles = StyleSheet.create({
   addButtonText: {
     fontSize: 13,
     fontWeight: '600',
+  },
+  quantityControl: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1.5,
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    marginTop: 4,
+  },
+  qtyButton: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 6,
+  },
+  qtyDisplay: {
+    fontSize: 14,
+    fontWeight: '600',
+    minWidth: 20,
+    textAlign: 'center',
   },
   emptyContainer: {
     alignItems: 'center',

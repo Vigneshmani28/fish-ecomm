@@ -3,7 +3,7 @@ import { CartItem, Product } from '@/types/database';
 
 interface CartContextType {
     items: CartItem[];
-    addToCart: (product: Product, quantity?: number) => void;
+    addToCart: (product: Product, quantity?: number, cleaningSelected?: boolean) => void;
     removeFromCart: (productId: string) => void;
     updateQuantity: (productId: string, quantity: number) => void;
     toggleCleaning: (productId: string) => void;
@@ -23,7 +23,7 @@ const FREE_DELIVERY_ABOVE = 500;
 export function CartProvider({ children }: { children: React.ReactNode }) {
     const [items, setItems] = useState<CartItem[]>([]);
 
-    const addToCart = useCallback((product: Product, quantity: number = 1) => {
+    const addToCart = useCallback((product: Product, quantity: number = 1, cleaningSelected: boolean = false) => {
         setItems(prev => {
             const existing = prev.find(item => item.product.id === product.id);
             if (existing) {
@@ -33,7 +33,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                         : item
                 );
             }
-            return [...prev, { product, quantity, cleaningSelected: false }];
+            return [...prev, { product, quantity, cleaningSelected }];
         });
     }, []);
 

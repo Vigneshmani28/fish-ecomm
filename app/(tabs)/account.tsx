@@ -1,6 +1,7 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme, ThemeMode } from '@/contexts/ThemeContext';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -47,6 +48,7 @@ function MenuItem({ icon, label, color, onPress, borderColor, tintColor, iconCol
 export default function AccountScreen() {
     const router = useRouter();
     const { profile, signOut, updateProfile } = useAuth();
+    const { themeMode, setThemeMode } = useTheme();
     const [editingName, setEditingName] = useState(false);
     const [nameInput, setNameInput] = useState(profile?.name || '');
 
@@ -86,6 +88,26 @@ export default function AccountScreen() {
                 onPress: () => signOut(),
             },
         ]);
+    };
+
+    const handleThemeChange = () => {
+        const options: Parameters<typeof Alert.alert>[2] = [
+            {
+                text: 'Light',
+                onPress: () => setThemeMode('light'),
+            },
+            {
+                text: 'Dark',
+                onPress: () => setThemeMode('dark'),
+            },
+            {
+                text: 'System',
+                onPress: () => setThemeMode('system'),
+            },
+            { text: 'Cancel', style: 'cancel' },
+        ];
+
+        Alert.alert('Select Theme', `Current: ${themeMode === 'system' ? 'System' : themeMode.charAt(0).toUpperCase() + themeMode.slice(1)}`, options);
     };
 
     return (
@@ -167,6 +189,14 @@ export default function AccountScreen() {
                         borderColor={borderColor}
                         tintColor={tintColor}
                         iconColor={iconColor}
+                    />
+                    <MenuItem
+                        icon="moon-outline"
+                        label={`Theme (${themeMode === 'system' ? 'System' : themeMode.charAt(0).toUpperCase() + themeMode.slice(1)})`}
+                        borderColor={borderColor}
+                        tintColor={tintColor}
+                        iconColor={iconColor}
+                        onPress={handleThemeChange}
                     />
                     <MenuItem
                         icon="help-circle-outline"

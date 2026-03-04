@@ -148,6 +148,8 @@ export default function CartScreen() {
     const deliveryCharge = getDeliveryCharge();
     const grandTotal = getGrandTotal();
 
+    console.log('items', items);
+
     return (
         <ThemedView style={styles.container}>
             {/* Header */}
